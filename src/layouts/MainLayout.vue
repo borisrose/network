@@ -33,6 +33,7 @@ import {  signOut } from "firebase/auth";
 import { firebase } from "../boot/firebase.js"
 import { useRouter } from "vue-router"
 import { useUsersStore } from '../stores/UsersStore.js'
+import { usePostsStore } from '../stores/PostsStore'
 
 
 const auth = firebase.auth
@@ -41,8 +42,8 @@ const router = useRouter()
 
 const logOut = () => {
 
-  usersStore = useUsersStore()
-  postsStore  = usePostsStore()
+  const usersStore = useUsersStore()
+  const postsStore  = usePostsStore()
 
   signOut(auth).then(() => {
 

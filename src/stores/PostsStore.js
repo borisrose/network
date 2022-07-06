@@ -110,7 +110,7 @@ export const usePostsStore = defineStore('postsStore', {
 
     },
 
-    async addPost(newPost, file){
+    async addPost(newPost){
 
 
         this.posts.unshift(newPost)
@@ -122,6 +122,7 @@ export const usePostsStore = defineStore('postsStore', {
         await setDoc(doc(firebase.db, 'posts', newPost.id), {
           ...newPost
         });
+        console.log('post ajouté à la base de données')
 
         
 

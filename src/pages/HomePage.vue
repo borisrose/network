@@ -50,12 +50,11 @@
 
 
 
-                <q-card class="my-card">
+                <q-card class="my-card" v-if="post.imgUrl">
 
-                    <img :src="file">
+                    <img :src="post.imgUrl" alt="image non chargée"/>
 
-                   
-
+                
                 </q-card>
 
 
@@ -88,7 +87,7 @@
                 color="white" 
                 text-color="black" 
                 label="Supprimer"
-                @click.prevent = "deletePost(post.id)" 
+                @click.prevent = "deletePost(post.id, post)" 
                 
                 />
     
@@ -333,7 +332,21 @@
           
          
             />
-         
+
+
+               <q-uploader
+                    @added="addImg"
+                    :hide-upload-btn="true"
+                    label="Upload files"
+                    color="accent"
+                    square
+                    flat
+                    bordered
+                    v-model="uploadingImg"
+                    style="width:100%"
+                />
+
+           
             
            
 
@@ -348,7 +361,7 @@
             <div class="q-pa-md q-gutter-sm">
                     <q-btn type="submit" :loading="loading[0]" color="primary" 
                     @click="simulateProgress(0)" 
-                :disabled="!newPost"
+                    :disabled="!newPost"
                     style="width: 150px">
                 Valider
                 <template v-slot:loading>
@@ -375,16 +388,18 @@
 <script setup>
 
 
-import { reactive, ref, onMounted } from 'vue'
+import {  ref, onMounted } from 'vue'
 import { useUsersStore } from '../stores/UsersStore.js'
 import { usePostsStore} from '../stores/PostsStore.js'
 import { firebase } from '../boot/firebase.js'
 import { useQuasar } from 'quasar'
-
+import { uploadBytes, ref as storage_ref,   getDownloadURL,  deleteObject } from "firebase/storage";
 
 
 
 const $q = useQuasar()
+const storage = firebase.storage
+
 
 
 
@@ -393,13 +408,13 @@ const postsStore = usePostsStore()
 
 //POST 
 const newPost = ref('')
-const newPostRef = ref(null)
+
 const isToEdit = ref(false)
 const newPostContent = ref('')
 //file
 
-
-
+const fileRef = ref('')
+const uploadingImg = ref('')
 
 
 
@@ -427,32 +442,103 @@ const onSubmit = () => {
     let id = currentTime.toString()
     let date = `publié le ${new Date().getDate()}/${new Date().getMonth()}/${new Date().getFullYear()}`
 
-  
     
-
-    
-
-    let post = {
-        id: id,
-        authorFirstname : usersStore.user.firstname,
-        authorEmail : usersStore.user.email,
-        authorLastname : usersStore.user.lastname,
-        content : newPost.value,
-        date,
-        peopleLikingIt: [],
-        peopleDislikingIt: [],
-        comments: [],
-        isCommentsSeeable : false,
-       
+    //if ever there is a picture uploaded
+        let file = fileRef.value
+        const fileName = `images/${file.__key}`
+        console.log('fileName', fileName)
+        console.log('on entre dans la partie concernant picture')
+        console.log('On vérifie ce que contient file qui est = fileRef.value', file)
+        console.log('------------------------------------------------------')
+        console.log('On regarde ce que contient pathReference')
+        let pathReference = storage_ref(storage, `images/${file.__key}` )
+        console.log('pathReference', 'storage : -------->',storage, 'file.__key : --------->', file.__key)
+        console.log('On regarde ce que contient gsReference')
         
-    }
+        let gsReference = ref(storage, `gs://${storage._bucket.bucket}/images/${file.__key}`)
+        console.log('------------------------------gsReference', gsReference)
+        console.log('${storage._bucket.bucket} : ',storage._bucket.bucket)
 
-  
+        console.log('on met la référence gsReference dans imgUrl.value')
 
-    postsStore.addPost(post, file)
+        //const httpUrl = `https://firebasestorage.googleapis.com/v0/b/${storage._bucket.bucket}/images/${file.__key}`
+        
+     
+        console.log('gesReference---------->', gsReference)
+       uploadBytes(pathReference, file).then((snapshot) => {
+                console.log('on est dans la fonction uploadBytes')
 
-    newPost.value = ''
+                console.log('snapShot vaut----------------->', snapshot)
+                
+
+                
+              
+
+        }).then(() => {
+            
+            
+            getDownloadURL(pathReference).then((url) => {
+                // `url` is the download URL for 'images/stars.jpg'
+
+                // This can be downloaded directly:
+                const xhr = new XMLHttpRequest();
+                xhr.responseType = 'blob';
+                xhr.onload = (event) => {
+                const blob = xhr.response;
+                };
+                
+                xhr.open('GET', url);
+                xhr.send();
+                return(url)
+                // // Or inserted into an <img> element
+                // const img = document.getElementById('myimg');
+                // img.setAttribute('src', url);
+            }).then( (url) => {
+
+                console.log('url', url)
+
+                        
+
+                let post = {
+                    id: id,
+                    authorFirstname : usersStore.user.firstname,
+                    authorEmail : usersStore.user.email,
+                    authorLastname : usersStore.user.lastname,
+                    content : newPost.value,
+                    date,
+                    peopleLikingIt: [],
+                    peopleDislikingIt: [],
+                    comments: [],
+                    imgUrl: url,
+                    imgName :fileName, 
+                    isCommentsSeeable : false,
+                
+                    
+                }
+
+            
+
+                postsStore.addPost(post)
+
+                newPost.value = ''
+                uploadingImg.value = ''
     
+
+
+
+
+            })
+            .catch((error) => {
+                // Handle any errors
+            });
+
+         }).catch((error) => {
+                // Handle any errors
+        });
+    //
+    
+
+
   
      
    
@@ -474,9 +560,28 @@ const simulateProgress = (number) => {
 /* Handle delete clicked*/
 
 
-const deletePost = (idToDelete) => {
+const deletePost = (idToDelete, post) => {
         console.log('On entre dans la fonctiond deletePost() qui fait référence à la fonction de postsStore du même nom')
-        postsStore.deletePost(idToDelete)
+        
+        // Delete the file
+        deleteObject(storage_ref(storage,post.imgName)).then(() => {
+    
+                console.log('le fichier image a été enlevé de la base de données')
+                 
+                postsStore.deletePost(idToDelete)
+
+                $q.notify({
+
+                    message: "suppression du post",
+                    color: 'blue'
+                })
+
+        }).catch((error) => {
+        // Uh-oh, an error occurred!
+        });
+                
+        
+       
 }
 
 
@@ -540,12 +645,26 @@ const editNewPostContent = (post) => {
 }
 
 
+const addImg = (files) => {
+    // function definition 
+
+    let file = files[0]
+
+    fileRef.value = file
+
+    console.log("FILE", file)
+    
+
+    
+}
+
+
 
 const onRejected = (rejectedEntries) => {
     
     $q.notify({
-    type: 'negative',
-    message: `${rejectedEntries.length} fichier ne répond pas aux conditions de validation `
+        type: 'negative',
+        message: `${rejectedEntries.length} fichier ne répond pas aux conditions de validation `
     })
 
 }
