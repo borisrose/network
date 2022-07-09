@@ -193,7 +193,7 @@ const login = () => {
       v$_login.value.$validate()
      
 
-    if(v$_login.value.errors !== []){
+    if(!v$_login.value.errors === []){
 
         $q.notify({
           message: 'Les informations sont incomplètes',
@@ -241,8 +241,9 @@ const login = () => {
 const signup = async() => {
 
 
-          v$_login.value.$validate()
-      if(!v$_signup.value.$errors !== []){
+      v$_signup.value.$validate()
+
+      if(!v$_signup.value.$errors === []){
 
         $q.notify({
 
