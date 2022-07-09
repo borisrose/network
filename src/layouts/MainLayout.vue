@@ -10,7 +10,7 @@
           <q-toolbar-title>Groupamania</q-toolbar-title>
        
          
-          <q-btn  @click="logOut" style="background: seconday; color: white" label="Déconnexion" />
+          <q-btn  v-if="usersStore.user.email" @click="logOut" style="background: seconday; color: white" label="Déconnexion" />
       
          
 
@@ -37,13 +37,13 @@ import { usePostsStore } from '../stores/PostsStore'
 
 
 const auth = firebase.auth
-let usersStore = null
+const usersStore = useUsersStore()
+const postsStore  = usePostsStore()
 const router = useRouter()
 
 const logOut = () => {
 
-  const usersStore = useUsersStore()
-  const postsStore  = usePostsStore()
+
 
   signOut(auth).then(() => {
 

@@ -18,7 +18,6 @@
         lazy-rules
         :rules="[
           val => val !== null && val !== '' || 'Complétez'
-         
         ]"
       />
 
@@ -31,15 +30,15 @@
         lazy-rules
         :rules="[
           val => val !== null && val !== '' || 'Complétez'
-         
         ]"
+
+
       />
 
       <q-input
         filled
         v-model="user.email"
         v-bind:label="email_message"
-
         lazy-rules
         :rules="[ val => val && val.length > 0 || 'Complétez']"
       />
@@ -98,22 +97,24 @@
 <script setup>
 
 
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword  } from 'firebase/auth'
 import { firebase } from '../boot/firebase.js'
 import useVuelidate from '@vuelidate/core'
-import { required, email } from '@vuelidate/validators'
+import { required, email, sameAs } from '@vuelidate/validators'
 import { useUsersStore } from '../stores/UsersStore.js'
 import { useRouter, useRoute} from 'vue-router'
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore'
+import { useQuasar } from 'quasar'
 
 
 let usersStore = null 
 
-const $v = useVuelidate()
+const $q = useQuasar()
 const router = useRouter()
 
 const progress = ref(false)
+
 
 const loading = ref([
       false])
@@ -145,22 +146,35 @@ const props = defineProps({
 
 })
 
-onMounted(() => {
 
- usersStore  = useUsersStore()
+
+
+const rules_signup = computed(() => {
+
+    return {
+        firstname: { required },
+        lastname : { required },
+        email: { required, email },
+        password: { required },
+        confirmed: { required, sameAs : sameAs(user.password) }
+    }
+})
+
+const v$_signup = useVuelidate(rules_signup, user)
+
+const rules_login = computed(() => {
+
+    return {
+      
+        email: { required, email },
+        password: { required },
+       
+    }
+
 
 })
 
-
-const validattions = () => {
-
-    return {
-        email: { required },
-        password: { required },
-        confirmed: { required }
-    }
-}
-
+const v$_login = useVuelidate(rules_login, user)
 
 
 const onReset = () => {
@@ -176,7 +190,18 @@ const login = () => {
 
       console.log('On entre dans la fonction login')
 
+      v$_login.value.$validate()
+     
 
+    if(v$_login.value.errors !== []){
+
+        $q.notify({
+          message: 'Les informations sont incomplètes',
+          color: 'negative'
+        })
+
+        return
+    }
 
 
     signInWithEmailAndPassword(firebase.auth, user.email, user.password)
@@ -216,6 +241,18 @@ const login = () => {
 const signup = async() => {
 
 
+          v$_login.value.$validate()
+      if(!v$_signup.value.$errors !== []){
+
+        $q.notify({
+
+            message: 'Les informations sont incomplètes',
+            color: 'negative'
+
+        })
+
+        return 
+      }
       console.log('On entre dans la fonction signup')
       console.log(firebase.auth)
       
@@ -233,16 +270,18 @@ const signup = async() => {
         let userObject = {
 
         uid : user.uid,
-        password : user.password,
         firstname : user.firstname,
         lastname : user.lastname,
-        email: user.email
+        email: user.email.toLowerCase(),
+        isAdmin : false
 
         }
   
       usersStore.addUser(userObject)
       console.log('Nouvel utilisateur dans le state et en bdd')
       router.push('/homepage')
+
+      
 
 
 
@@ -264,7 +303,6 @@ const onSubmit = () => {
        
         if(props.isLogin === true ) {
 
-      
             login()
             
         }else {
@@ -284,6 +322,13 @@ const simulateProgress = (number) => {
     }, 3000)
 }
 
+
+
+onMounted(() => {
+
+ usersStore  = useUsersStore()
+
+})
 
 </script>
 

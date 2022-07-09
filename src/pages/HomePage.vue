@@ -74,7 +74,7 @@
 
     
                 <q-btn 
-                v-if="usersStore.user.email === post.authorEmail"
+                v-if="usersStore.user.email === post.authorEmail || usersStore.user.isAdmin === true"
                 color="white" 
                 @click="isToEdit = !isToEdit"
                 text-color="black" 
@@ -83,7 +83,7 @@
 
            
                 <q-btn 
-                v-if="usersStore.user.email === post.authorEmail"
+                v-if="usersStore.user.email === post.authorEmail  || usersStore.user.isAdmin === true"
                 color="white" 
                 text-color="black" 
                 label="Supprimer"
@@ -348,16 +348,6 @@
 
            
             
-           
-
-         
-
-
-
-
-
-               
-
             <div class="q-pa-md q-gutter-sm">
                     <q-btn type="submit" :loading="loading[0]" color="primary" 
                     @click="simulateProgress(0)" 
@@ -376,12 +366,6 @@
             </div>
 
 
-
-    
-
-
-    
-
     </div>
   </q-page>
 </template>
@@ -394,6 +378,7 @@ import { usePostsStore} from '../stores/PostsStore.js'
 import { firebase } from '../boot/firebase.js'
 import { useQuasar } from 'quasar'
 import { uploadBytes, ref as storage_ref,   getDownloadURL,  deleteObject } from "firebase/storage";
+
 
 
 
@@ -442,106 +427,128 @@ const onSubmit = () => {
     let id = currentTime.toString()
     let date = `publié le ${new Date().getDate()}/${new Date().getMonth()}/${new Date().getFullYear()}`
 
-    
-    //if ever there is a picture uploaded
-        let file = fileRef.value
-        const fileName = `images/${file.__key}`
-        console.log('fileName', fileName)
-        console.log('on entre dans la partie concernant picture')
-        console.log('On vérifie ce que contient file qui est = fileRef.value', file)
-        console.log('------------------------------------------------------')
-        console.log('On regarde ce que contient pathReference')
-        let pathReference = storage_ref(storage, `images/${file.__key}` )
-        console.log('pathReference', 'storage : -------->',storage, 'file.__key : --------->', file.__key)
-        console.log('On regarde ce que contient gsReference')
         
-        let gsReference = ref(storage, `gs://${storage._bucket.bucket}/images/${file.__key}`)
-        console.log('------------------------------gsReference', gsReference)
-        console.log('${storage._bucket.bucket} : ',storage._bucket.bucket)
+        if(fileRef.value !== ''){
 
-        console.log('on met la référence gsReference dans imgUrl.value')
 
-        //const httpUrl = `https://firebasestorage.googleapis.com/v0/b/${storage._bucket.bucket}/images/${file.__key}`
+
+        // if an uploaded image exists 
+
+
+            //if ever there is a picture uploaded
+            let file = fileRef.value
+            const fileName = `images/${file.__key}`
+            console.log('fileName', fileName)
+            console.log('on entre dans la partie concernant picture')
+            console.log('On vérifie ce que contient file qui est = fileRef.value', file)
+            console.log('------------------------------------------------------')
+            console.log('On regarde ce que contient pathReference')
+            let pathReference = storage_ref(storage, `images/${file.__key}` )
+            console.log('pathReference', 'storage : -------->',storage, 'file.__key : --------->', file.__key)
+            console.log('On regarde ce que contient gsReference')
+            
+            let gsReference = ref(storage, `gs://${storage._bucket.bucket}/images/${file.__key}`)
+            console.log('------------------------------gsReference', gsReference)
+            console.log('${storage._bucket.bucket} : ',storage._bucket.bucket)
+
+            console.log('on met la référence gsReference dans imgUrl.value')
+
+            //const httpUrl = `https://firebasestorage.googleapis.com/v0/b/${storage._bucket.bucket}/images/${file.__key}`
+            
         
-     
-        console.log('gesReference---------->', gsReference)
-       uploadBytes(pathReference, file).then((snapshot) => {
-                console.log('on est dans la fonction uploadBytes')
+            console.log('gesReference---------->', gsReference)
+            uploadBytes(pathReference, file).then((snapshot) => {
+                    console.log('on est dans la fonction uploadBytes')
 
-                console.log('snapShot vaut----------------->', snapshot)
-                
-
-                
-              
-
-        }).then(() => {
-            
-            
-            getDownloadURL(pathReference).then((url) => {
-                // `url` is the download URL for 'images/stars.jpg'
-
-                // This can be downloaded directly:
-                const xhr = new XMLHttpRequest();
-                xhr.responseType = 'blob';
-                xhr.onload = (event) => {
-                const blob = xhr.response;
-                };
-                
-                xhr.open('GET', url);
-                xhr.send();
-                return(url)
-                // // Or inserted into an <img> element
-                // const img = document.getElementById('myimg');
-                // img.setAttribute('src', url);
-            }).then( (url) => {
-
-                console.log('url', url)
-
-                        
-
-                let post = {
-                    id: id,
-                    authorFirstname : usersStore.user.firstname,
-                    authorEmail : usersStore.user.email,
-                    authorLastname : usersStore.user.lastname,
-                    content : newPost.value,
-                    date,
-                    peopleLikingIt: [],
-                    peopleDislikingIt: [],
-                    comments: [],
-                    imgUrl: url,
-                    imgName :fileName, 
-                    isCommentsSeeable : false,
-                
+                    console.log('snapShot vaut----------------->', snapshot)
                     
+
+                    
+                
+
+            }).then(() => {
+                
+                
+                getDownloadURL(pathReference).then((url) => {
+                  
+                    const xhr = new XMLHttpRequest();
+                    xhr.responseType = 'blob';
+                    xhr.onload = (event) => {
+                    const blob = xhr.response;
+                    };
+                    
+                    xhr.open('GET', url);
+                    xhr.send();
+                    return(url)
+             
+                }).then( (url) => {
+
+                    console.log('url', url)
+
+                
+                    let post = {
+                        id: id,
+                        authorFirstname : usersStore.user.firstname,
+                        authorEmail : usersStore.user.email,
+                        authorLastname : usersStore.user.lastname,
+                        content : newPost.value,
+                        date,
+                        peopleLikingIt: [],
+                        peopleDislikingIt: [],
+                        comments: [],
+                        imgUrl: url,
+                        imgName :fileName, 
+                        isCommentsSeeable : false,
+                    
+                        
+                    }
+
+                    postsStore.addPost(post)
+
+                    newPost.value = ''
+                    fileRef.value = ''
+                    uploadingImg.value = ''
+   
+
+                })
+                .catch((error) => {
+                    // Handle any errors
+                    console.error(error)
+                });
+
+            }).catch((error) => {
+                    // Handle any errors
+                    console.error(error)
+            });
+        //
+
+        }
+        else {
+
+                //if no image whatsoever 
+                 let post = {
+
+                        id: id,
+                        authorFirstname : usersStore.user.firstname,
+                        authorEmail : usersStore.user.email,
+                        authorLastname : usersStore.user.lastname,
+                        content : newPost.value,
+                        date,
+                        peopleLikingIt: [],
+                        peopleDislikingIt: [],
+                        comments: [],
+                        isCommentsSeeable : false,
+                                     
                 }
-
-            
-
+ 
                 postsStore.addPost(post)
 
                 newPost.value = ''
+                fileRef.value = ''
                 uploadingImg.value = ''
-    
 
-
-
-
-            })
-            .catch((error) => {
-                // Handle any errors
-            });
-
-         }).catch((error) => {
-                // Handle any errors
-        });
-    //
-    
-
-
-  
-     
-   
+        }
+        
 
 }
 
@@ -561,24 +568,35 @@ const simulateProgress = (number) => {
 
 
 const deletePost = (idToDelete, post) => {
-        console.log('On entre dans la fonctiond deletePost() qui fait référence à la fonction de postsStore du même nom')
+        console.log('On entre dans la fonction deletePost() qui fait référence à la fonction de postsStore du même nom')
         
-        // Delete the file
-        deleteObject(storage_ref(storage,post.imgName)).then(() => {
-    
-                console.log('le fichier image a été enlevé de la base de données')
-                 
-                postsStore.deletePost(idToDelete)
 
-                $q.notify({
+        if(post.imgName){
 
-                    message: "suppression du post",
-                    color: 'blue'
-                })
+            // Delete the file
+            deleteObject(storage_ref(storage,post.imgName)).then(() => {
+        
+                    console.log('le fichier image a été enlevé de la base de données')
+                    
+                    postsStore.deletePost(idToDelete)
 
-        }).catch((error) => {
-        // Uh-oh, an error occurred!
-        });
+                    $q.notify({
+
+                        message: "suppression du post",
+                        color: 'blue'
+                    })
+
+            }).catch((error) => {
+            // Uh-oh, an error occurred!
+            });
+
+        }
+        else {
+
+            postsStore.deletePost(idToDelete)
+
+        }
+       
                 
         
        
@@ -648,11 +666,16 @@ const editNewPostContent = (post) => {
 const addImg = (files) => {
     // function definition 
 
-    let file = files[0]
+    if(files[0]){
 
-    fileRef.value = file
+        let file = files[0]
 
-    console.log("FILE", file)
+        fileRef.value = file
+
+        console.log("FILE", file)
+
+    }
+  
     
 
     
