@@ -340,6 +340,7 @@
                     label="Upload files"
                     color="accent"
                     square
+                    ref="uploader"
                     flat
                     bordered
                     v-model="uploadingImg"
@@ -384,7 +385,7 @@ import { uploadBytes, ref as storage_ref,   getDownloadURL,  deleteObject } from
 
 const $q = useQuasar()
 const storage = firebase.storage
-
+const uploader = ref()
 
 
 
@@ -509,7 +510,7 @@ const onSubmit = () => {
 
                     newPost.value = ''
                     fileRef.value = ''
-                    uploadingImg.value = ''
+                    uploader.value.reset()
    
 
                 })
@@ -679,6 +680,7 @@ const addImg = (files) => {
 
     }
   
+
     
 
     
