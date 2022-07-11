@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
-import { doc, setDoc, addDoc, collection, getDocs, deleteDoc } from 'firebase/firestore'; 
+import { doc, setDoc, collection, getDocs, deleteDoc, query, orderBy } from 'firebase/firestore'; 
 import { firebase } from '../boot/firebase'
 import { useUsersStore } from '../stores/UsersStore'
-import { ref, uploadBytesResumable } from 'firebase/storage'
+
 
 
 
@@ -47,7 +47,7 @@ export const usePostsStore = defineStore('postsStore', {
 
       this.posts = []
 
-      const querySnapshot = await getDocs(collection(firebase.db, "posts"))
+      const querySnapshot = await getDocs(query(collection(firebase.db, 'posts'), orderBy('date2', 'desc')))
       querySnapshot.forEach((doc) => {
 
 

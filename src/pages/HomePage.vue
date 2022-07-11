@@ -425,7 +425,8 @@ const onSubmit = () => {
     console.log('Appel de la fonction onSubdmit')
     let currentTime = new Date().getTime()
     let id = currentTime.toString()
-    let date = `publié le ${new Date().getDate()}/${new Date().getMonth()}/${new Date().getFullYear()}`
+    let date = `publié ! le ${new Date().getDate()}/${new Date().getMonth()}/${new Date().getFullYear()}`
+    let date2 = new Date().toISOString()
 
         
         if(fileRef.value !== ''){
@@ -493,6 +494,7 @@ const onSubmit = () => {
                         authorLastname : usersStore.user.lastname,
                         content : newPost.value,
                         date,
+                        date2,
                         peopleLikingIt: [],
                         peopleDislikingIt: [],
                         comments: [],
@@ -534,6 +536,7 @@ const onSubmit = () => {
                         authorLastname : usersStore.user.lastname,
                         content : newPost.value,
                         date,
+                        date2,
                         peopleLikingIt: [],
                         peopleDislikingIt: [],
                         comments: [],
